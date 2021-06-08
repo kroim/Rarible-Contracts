@@ -1,0 +1,2878 @@
+{
+  "contractName": "LibOrderData",
+  "abi": [],
+  "metadata": "{\"compiler\":{\"version\":\"0.7.6+commit.7338295f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderData.sol\":\"LibOrderData\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrder.sol\":{\"keccak256\":\"0x55ba801c6df2a8170ef701bae700e51dd4c9b3c0bf5024951492d4bea0eb8776\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://d4a032ad2eb1feed27293075d68a470d01e839217616b1f4b8718c1a7c7cfa2c\",\"dweb:/ipfs/QmNMH35bURwkbKMpbDTiqc9ghj9wVinNRcoCvE4vxJaEyK\"]},\"/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderData.sol\":{\"keccak256\":\"0x1e10b58017ad085214c22de7501790c7c4c295da26a26bbdd04961c01d0cf154\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://284eeb8b8ce91c0b64459629509f97b72b15056eb3b6dff3c7756ac05de7c290\",\"dweb:/ipfs/QmQJSggrAj4ckgd2v8qLsmgqz3X8qbEWBRChxWvEMAU3Lo\"]},\"/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderDataV1.sol\":{\"keccak256\":\"0x9c4a7b9e122cd8873f175c043a45608100a368ab2b4a2625f239cb4ef17062c8\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://bb9711a1fa2e5d067a56d0f13b420512653e03df77f41b9b478bb662b0384f74\",\"dweb:/ipfs/QmYdArCg6iecearVufbT9HVoy4dydWbZMfpDfCCUPdBvJE\"]},\"/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/lib/LibMath.sol\":{\"keccak256\":\"0x479e01de1a609d836f73eecb1ba5d0a3d78fa791979e8e4f361a576a61b101ec\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2924c6587b528fdecd101443271472ddc497cc6f4d44d61f1b62620dbce03897\",\"dweb:/ipfs/QmW6udkwDbXuJT6Pdk2KA7y6NzTm8UMkvTFFL666rd3pSD\"]},\"@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol\":{\"keccak256\":\"0x0dd1e9b19801e3e7d900fbf4182d81e1afd23ad7be39504e33df6bbcba91d724\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://5e30d594df25d0651c2cd6f85d856e5fc9f3dbae68d017e1da33eb3c7e2f1ecc\",\"dweb:/ipfs/QmPgkV99jZr3Zs9ex8dJ5j22oX4wDuDtMCnXNy67bTwgAB\"]},\"@rarible/lib-asset/contracts/LibAsset.sol\":{\"keccak256\":\"0xc1066d605bee73f3d8a3111b7f8abefd7673387bc784916525d2457b844a4cc8\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://03c321ebe8f3a629e6e6d3650f11e09a83d803c9d2d40ccf1c0897068afed2e4\",\"dweb:/ipfs/QmdqTsst87KD2NKRzqdpw8QWsJo8mjgp4prozHUfexN1pc\"]},\"@rarible/royalties/contracts/LibPart.sol\":{\"keccak256\":\"0xd0123f7411573a6a7e1527e0d3901913d7642e504ff240d5b7c5b76a28587def\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://447b449f7f986ecfdea10cbc96ae276877102866353b4f8410fec0bdb357d5ae\",\"dweb:/ipfs/QmatbYwMc1UXCGGH1D9fvgLbLPNdgzBVafYW84B1nJJiRr\"]}},\"version\":1}",
+  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220f13142ab1d011c9fb6e5998cc8dd52b8d56431a9dc4538314b3375b5f2d419f864736f6c63430007060033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220f13142ab1d011c9fb6e5998cc8dd52b8d56431a9dc4538314b3375b5f2d419f864736f6c63430007060033",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "194:986:9:-:0;;;;;;;;;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "194:986:9:-:0;;;;;;;;",
+  "source": "// SPDX-License-Identifier: MIT\n\npragma solidity 0.7.6;\n\nimport \"./LibOrder.sol\";\nimport \"./LibOrderData.sol\";\nimport \"./LibOrderDataV1.sol\";\nimport \"@rarible/royalties/contracts/LibPart.sol\";\n\nlibrary LibOrderData {\n\n    function parse(LibOrder.Order memory order) pure internal returns (LibOrderDataV1.DataV1 memory dataOrder) {\n        if (order.dataType == LibOrderDataV1.V1) {\n            dataOrder = LibOrderDataV1.decodeOrderDataV1(order.data);\n            if (dataOrder.payouts.length == 0) {\n                dataOrder = payoutSet(order.maker, dataOrder);\n            }\n        } else if (order.dataType == 0xffffffff) {\n            dataOrder = payoutSet(order.maker, dataOrder);\n        } else {\n            revert(\"Unknown Order data type\");\n        }\n    }\n\n    function payoutSet(\n        address orderAddress,\n        LibOrderDataV1.DataV1 memory dataOrderOnePayoutIn\n    ) pure internal returns (LibOrderDataV1.DataV1 memory ) {\n        LibPart.Part[] memory payout = new LibPart.Part[](1);\n        payout[0].account = payable(orderAddress);\n        payout[0].value = 10000;\n        dataOrderOnePayoutIn.payouts = payout;\n        return dataOrderOnePayoutIn;\n    }\n}\n",
+  "sourcePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderData.sol",
+  "ast": {
+    "absolutePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderData.sol",
+    "exportedSymbols": {
+      "LibAsset": [
+        4695
+      ],
+      "LibMath": [
+        2993
+      ],
+      "LibOrder": [
+        1372
+      ],
+      "LibOrderData": [
+        1482
+      ],
+      "LibOrderDataV1": [
+        1519
+      ],
+      "LibPart": [
+        4742
+      ],
+      "SafeMathUpgradeable": [
+        3865
+      ]
+    },
+    "id": 1483,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 1374,
+        "literals": [
+          "solidity",
+          "0.7",
+          ".6"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "33:22:9"
+      },
+      {
+        "absolutePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrder.sol",
+        "file": "./LibOrder.sol",
+        "id": 1375,
+        "nodeType": "ImportDirective",
+        "scope": 1483,
+        "sourceUnit": 1373,
+        "src": "57:24:9",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "absolutePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderData.sol",
+        "file": "./LibOrderData.sol",
+        "id": 1376,
+        "nodeType": "ImportDirective",
+        "scope": 1483,
+        "sourceUnit": 1483,
+        "src": "82:28:9",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "absolutePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderDataV1.sol",
+        "file": "./LibOrderDataV1.sol",
+        "id": 1377,
+        "nodeType": "ImportDirective",
+        "scope": 1483,
+        "sourceUnit": 1520,
+        "src": "111:30:9",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "absolutePath": "@rarible/royalties/contracts/LibPart.sol",
+        "file": "@rarible/royalties/contracts/LibPart.sol",
+        "id": 1378,
+        "nodeType": "ImportDirective",
+        "scope": 1483,
+        "sourceUnit": 4743,
+        "src": "142:50:9",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "fullyImplemented": true,
+        "id": 1482,
+        "linearizedBaseContracts": [
+          1482
+        ],
+        "name": "LibOrderData",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "body": {
+              "id": 1434,
+              "nodeType": "Block",
+              "src": "329:438:9",
+              "statements": [
+                {
+                  "condition": {
+                    "commonType": {
+                      "typeIdentifier": "t_bytes4",
+                      "typeString": "bytes4"
+                    },
+                    "id": 1389,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftExpression": {
+                      "expression": {
+                        "id": 1385,
+                        "name": "order",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 1380,
+                        "src": "343:5:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Order_$1232_memory_ptr",
+                          "typeString": "struct LibOrder.Order memory"
+                        }
+                      },
+                      "id": 1386,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "dataType",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 1229,
+                      "src": "343:14:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes4",
+                        "typeString": "bytes4"
+                      }
+                    },
+                    "nodeType": "BinaryOperation",
+                    "operator": "==",
+                    "rightExpression": {
+                      "expression": {
+                        "id": 1387,
+                        "name": "LibOrderDataV1",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 1519,
+                        "src": "361:14:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_type$_t_contract$_LibOrderDataV1_$1519_$",
+                          "typeString": "type(library LibOrderDataV1)"
+                        }
+                      },
+                      "id": 1388,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "V1",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 1494,
+                      "src": "361:17:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes4",
+                        "typeString": "bytes4"
+                      }
+                    },
+                    "src": "343:35:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "falseBody": {
+                    "condition": {
+                      "commonType": {
+                        "typeIdentifier": "t_bytes4",
+                        "typeString": "bytes4"
+                      },
+                      "id": 1417,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "leftExpression": {
+                        "expression": {
+                          "id": 1414,
+                          "name": "order",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 1380,
+                          "src": "597:5:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Order_$1232_memory_ptr",
+                            "typeString": "struct LibOrder.Order memory"
+                          }
+                        },
+                        "id": 1415,
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "dataType",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 1229,
+                        "src": "597:14:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes4",
+                          "typeString": "bytes4"
+                        }
+                      },
+                      "nodeType": "BinaryOperation",
+                      "operator": "==",
+                      "rightExpression": {
+                        "hexValue": "30786666666666666666",
+                        "id": 1416,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "615:10:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_4294967295_by_1",
+                          "typeString": "int_const 4294967295"
+                        },
+                        "value": "0xffffffff"
+                      },
+                      "src": "597:28:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bool",
+                        "typeString": "bool"
+                      }
+                    },
+                    "falseBody": {
+                      "id": 1431,
+                      "nodeType": "Block",
+                      "src": "703:58:9",
+                      "statements": [
+                        {
+                          "expression": {
+                            "arguments": [
+                              {
+                                "hexValue": "556e6b6e6f776e204f7264657220646174612074797065",
+                                "id": 1428,
+                                "isConstant": false,
+                                "isLValue": false,
+                                "isPure": true,
+                                "kind": "string",
+                                "lValueRequested": false,
+                                "nodeType": "Literal",
+                                "src": "724:25:9",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_stringliteral_a8d4179c57d21bb0adffe74c6e7a4d43bf1559a57e0b833a295fb2cf352d9f77",
+                                  "typeString": "literal_string \"Unknown Order data type\""
+                                },
+                                "value": "Unknown Order data type"
+                              }
+                            ],
+                            "expression": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_stringliteral_a8d4179c57d21bb0adffe74c6e7a4d43bf1559a57e0b833a295fb2cf352d9f77",
+                                  "typeString": "literal_string \"Unknown Order data type\""
+                                }
+                              ],
+                              "id": 1427,
+                              "name": "revert",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [
+                                4294967277,
+                                4294967277
+                              ],
+                              "referencedDeclaration": 4294967277,
+                              "src": "717:6:9",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_function_revert_pure$_t_string_memory_ptr_$returns$__$",
+                                "typeString": "function (string memory) pure"
+                              }
+                            },
+                            "id": 1429,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "kind": "functionCall",
+                            "lValueRequested": false,
+                            "names": [],
+                            "nodeType": "FunctionCall",
+                            "src": "717:33:9",
+                            "tryCall": false,
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_tuple$__$",
+                              "typeString": "tuple()"
+                            }
+                          },
+                          "id": 1430,
+                          "nodeType": "ExpressionStatement",
+                          "src": "717:33:9"
+                        }
+                      ]
+                    },
+                    "id": 1432,
+                    "nodeType": "IfStatement",
+                    "src": "593:168:9",
+                    "trueBody": {
+                      "id": 1426,
+                      "nodeType": "Block",
+                      "src": "627:70:9",
+                      "statements": [
+                        {
+                          "expression": {
+                            "id": 1424,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "leftHandSide": {
+                              "id": 1418,
+                              "name": "dataOrder",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 1383,
+                              "src": "641:9:9",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                "typeString": "struct LibOrderDataV1.DataV1 memory"
+                              }
+                            },
+                            "nodeType": "Assignment",
+                            "operator": "=",
+                            "rightHandSide": {
+                              "arguments": [
+                                {
+                                  "expression": {
+                                    "id": 1420,
+                                    "name": "order",
+                                    "nodeType": "Identifier",
+                                    "overloadedDeclarations": [],
+                                    "referencedDeclaration": 1380,
+                                    "src": "663:5:9",
+                                    "typeDescriptions": {
+                                      "typeIdentifier": "t_struct$_Order_$1232_memory_ptr",
+                                      "typeString": "struct LibOrder.Order memory"
+                                    }
+                                  },
+                                  "id": 1421,
+                                  "isConstant": false,
+                                  "isLValue": true,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "memberName": "maker",
+                                  "nodeType": "MemberAccess",
+                                  "referencedDeclaration": 1215,
+                                  "src": "663:11:9",
+                                  "typeDescriptions": {
+                                    "typeIdentifier": "t_address",
+                                    "typeString": "address"
+                                  }
+                                },
+                                {
+                                  "id": 1422,
+                                  "name": "dataOrder",
+                                  "nodeType": "Identifier",
+                                  "overloadedDeclarations": [],
+                                  "referencedDeclaration": 1383,
+                                  "src": "676:9:9",
+                                  "typeDescriptions": {
+                                    "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                    "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                  }
+                                }
+                              ],
+                              "expression": {
+                                "argumentTypes": [
+                                  {
+                                    "typeIdentifier": "t_address",
+                                    "typeString": "address"
+                                  },
+                                  {
+                                    "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                    "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                  }
+                                ],
+                                "id": 1419,
+                                "name": "payoutSet",
+                                "nodeType": "Identifier",
+                                "overloadedDeclarations": [],
+                                "referencedDeclaration": 1481,
+                                "src": "653:9:9",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_function_internal_pure$_t_address_$_t_struct$_DataV1_$1501_memory_ptr_$returns$_t_struct$_DataV1_$1501_memory_ptr_$",
+                                  "typeString": "function (address,struct LibOrderDataV1.DataV1 memory) pure returns (struct LibOrderDataV1.DataV1 memory)"
+                                }
+                              },
+                              "id": 1423,
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "kind": "functionCall",
+                              "lValueRequested": false,
+                              "names": [],
+                              "nodeType": "FunctionCall",
+                              "src": "653:33:9",
+                              "tryCall": false,
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                "typeString": "struct LibOrderDataV1.DataV1 memory"
+                              }
+                            },
+                            "src": "641:45:9",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                              "typeString": "struct LibOrderDataV1.DataV1 memory"
+                            }
+                          },
+                          "id": 1425,
+                          "nodeType": "ExpressionStatement",
+                          "src": "641:45:9"
+                        }
+                      ]
+                    }
+                  },
+                  "id": 1433,
+                  "nodeType": "IfStatement",
+                  "src": "339:422:9",
+                  "trueBody": {
+                    "id": 1413,
+                    "nodeType": "Block",
+                    "src": "380:207:9",
+                    "statements": [
+                      {
+                        "expression": {
+                          "id": 1396,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "leftHandSide": {
+                            "id": 1390,
+                            "name": "dataOrder",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 1383,
+                            "src": "394:9:9",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                              "typeString": "struct LibOrderDataV1.DataV1 memory"
+                            }
+                          },
+                          "nodeType": "Assignment",
+                          "operator": "=",
+                          "rightHandSide": {
+                            "arguments": [
+                              {
+                                "expression": {
+                                  "id": 1393,
+                                  "name": "order",
+                                  "nodeType": "Identifier",
+                                  "overloadedDeclarations": [],
+                                  "referencedDeclaration": 1380,
+                                  "src": "439:5:9",
+                                  "typeDescriptions": {
+                                    "typeIdentifier": "t_struct$_Order_$1232_memory_ptr",
+                                    "typeString": "struct LibOrder.Order memory"
+                                  }
+                                },
+                                "id": 1394,
+                                "isConstant": false,
+                                "isLValue": true,
+                                "isPure": false,
+                                "lValueRequested": false,
+                                "memberName": "data",
+                                "nodeType": "MemberAccess",
+                                "referencedDeclaration": 1231,
+                                "src": "439:10:9",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_bytes_memory_ptr",
+                                  "typeString": "bytes memory"
+                                }
+                              }
+                            ],
+                            "expression": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_bytes_memory_ptr",
+                                  "typeString": "bytes memory"
+                                }
+                              ],
+                              "expression": {
+                                "id": 1391,
+                                "name": "LibOrderDataV1",
+                                "nodeType": "Identifier",
+                                "overloadedDeclarations": [],
+                                "referencedDeclaration": 1519,
+                                "src": "406:14:9",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_type$_t_contract$_LibOrderDataV1_$1519_$",
+                                  "typeString": "type(library LibOrderDataV1)"
+                                }
+                              },
+                              "id": 1392,
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "memberName": "decodeOrderDataV1",
+                              "nodeType": "MemberAccess",
+                              "referencedDeclaration": 1518,
+                              "src": "406:32:9",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_function_internal_pure$_t_bytes_memory_ptr_$returns$_t_struct$_DataV1_$1501_memory_ptr_$",
+                                "typeString": "function (bytes memory) pure returns (struct LibOrderDataV1.DataV1 memory)"
+                              }
+                            },
+                            "id": 1395,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "kind": "functionCall",
+                            "lValueRequested": false,
+                            "names": [],
+                            "nodeType": "FunctionCall",
+                            "src": "406:44:9",
+                            "tryCall": false,
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                              "typeString": "struct LibOrderDataV1.DataV1 memory"
+                            }
+                          },
+                          "src": "394:56:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                            "typeString": "struct LibOrderDataV1.DataV1 memory"
+                          }
+                        },
+                        "id": 1397,
+                        "nodeType": "ExpressionStatement",
+                        "src": "394:56:9"
+                      },
+                      {
+                        "condition": {
+                          "commonType": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          },
+                          "id": 1402,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "leftExpression": {
+                            "expression": {
+                              "expression": {
+                                "id": 1398,
+                                "name": "dataOrder",
+                                "nodeType": "Identifier",
+                                "overloadedDeclarations": [],
+                                "referencedDeclaration": 1383,
+                                "src": "468:9:9",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                  "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                }
+                              },
+                              "id": 1399,
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "memberName": "payouts",
+                              "nodeType": "MemberAccess",
+                              "referencedDeclaration": 1497,
+                              "src": "468:17:9",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr",
+                                "typeString": "struct LibPart.Part memory[] memory"
+                              }
+                            },
+                            "id": 1400,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "length",
+                            "nodeType": "MemberAccess",
+                            "src": "468:24:9",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_uint256",
+                              "typeString": "uint256"
+                            }
+                          },
+                          "nodeType": "BinaryOperation",
+                          "operator": "==",
+                          "rightExpression": {
+                            "hexValue": "30",
+                            "id": 1401,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": true,
+                            "kind": "number",
+                            "lValueRequested": false,
+                            "nodeType": "Literal",
+                            "src": "496:1:9",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_rational_0_by_1",
+                              "typeString": "int_const 0"
+                            },
+                            "value": "0"
+                          },
+                          "src": "468:29:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bool",
+                            "typeString": "bool"
+                          }
+                        },
+                        "id": 1412,
+                        "nodeType": "IfStatement",
+                        "src": "464:113:9",
+                        "trueBody": {
+                          "id": 1411,
+                          "nodeType": "Block",
+                          "src": "499:78:9",
+                          "statements": [
+                            {
+                              "expression": {
+                                "id": 1409,
+                                "isConstant": false,
+                                "isLValue": false,
+                                "isPure": false,
+                                "lValueRequested": false,
+                                "leftHandSide": {
+                                  "id": 1403,
+                                  "name": "dataOrder",
+                                  "nodeType": "Identifier",
+                                  "overloadedDeclarations": [],
+                                  "referencedDeclaration": 1383,
+                                  "src": "517:9:9",
+                                  "typeDescriptions": {
+                                    "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                    "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                  }
+                                },
+                                "nodeType": "Assignment",
+                                "operator": "=",
+                                "rightHandSide": {
+                                  "arguments": [
+                                    {
+                                      "expression": {
+                                        "id": 1405,
+                                        "name": "order",
+                                        "nodeType": "Identifier",
+                                        "overloadedDeclarations": [],
+                                        "referencedDeclaration": 1380,
+                                        "src": "539:5:9",
+                                        "typeDescriptions": {
+                                          "typeIdentifier": "t_struct$_Order_$1232_memory_ptr",
+                                          "typeString": "struct LibOrder.Order memory"
+                                        }
+                                      },
+                                      "id": 1406,
+                                      "isConstant": false,
+                                      "isLValue": true,
+                                      "isPure": false,
+                                      "lValueRequested": false,
+                                      "memberName": "maker",
+                                      "nodeType": "MemberAccess",
+                                      "referencedDeclaration": 1215,
+                                      "src": "539:11:9",
+                                      "typeDescriptions": {
+                                        "typeIdentifier": "t_address",
+                                        "typeString": "address"
+                                      }
+                                    },
+                                    {
+                                      "id": 1407,
+                                      "name": "dataOrder",
+                                      "nodeType": "Identifier",
+                                      "overloadedDeclarations": [],
+                                      "referencedDeclaration": 1383,
+                                      "src": "552:9:9",
+                                      "typeDescriptions": {
+                                        "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                        "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                      }
+                                    }
+                                  ],
+                                  "expression": {
+                                    "argumentTypes": [
+                                      {
+                                        "typeIdentifier": "t_address",
+                                        "typeString": "address"
+                                      },
+                                      {
+                                        "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                        "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                      }
+                                    ],
+                                    "id": 1404,
+                                    "name": "payoutSet",
+                                    "nodeType": "Identifier",
+                                    "overloadedDeclarations": [],
+                                    "referencedDeclaration": 1481,
+                                    "src": "529:9:9",
+                                    "typeDescriptions": {
+                                      "typeIdentifier": "t_function_internal_pure$_t_address_$_t_struct$_DataV1_$1501_memory_ptr_$returns$_t_struct$_DataV1_$1501_memory_ptr_$",
+                                      "typeString": "function (address,struct LibOrderDataV1.DataV1 memory) pure returns (struct LibOrderDataV1.DataV1 memory)"
+                                    }
+                                  },
+                                  "id": 1408,
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": false,
+                                  "kind": "functionCall",
+                                  "lValueRequested": false,
+                                  "names": [],
+                                  "nodeType": "FunctionCall",
+                                  "src": "529:33:9",
+                                  "tryCall": false,
+                                  "typeDescriptions": {
+                                    "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                    "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                  }
+                                },
+                                "src": "517:45:9",
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                  "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                }
+                              },
+                              "id": 1410,
+                              "nodeType": "ExpressionStatement",
+                              "src": "517:45:9"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": 1435,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "parse",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 1381,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1380,
+                  "mutability": "mutable",
+                  "name": "order",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1435,
+                  "src": "237:27:9",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Order_$1232_memory_ptr",
+                    "typeString": "struct LibOrder.Order"
+                  },
+                  "typeName": {
+                    "id": 1379,
+                    "name": "LibOrder.Order",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 1232,
+                    "src": "237:14:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Order_$1232_storage_ptr",
+                      "typeString": "struct LibOrder.Order"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "236:29:9"
+            },
+            "returnParameters": {
+              "id": 1384,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1383,
+                  "mutability": "mutable",
+                  "name": "dataOrder",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1435,
+                  "src": "289:38:9",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                    "typeString": "struct LibOrderDataV1.DataV1"
+                  },
+                  "typeName": {
+                    "id": 1382,
+                    "name": "LibOrderDataV1.DataV1",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 1501,
+                    "src": "289:21:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_DataV1_$1501_storage_ptr",
+                      "typeString": "struct LibOrderDataV1.DataV1"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "288:40:9"
+            },
+            "scope": 1482,
+            "src": "222:545:9",
+            "stateMutability": "pure",
+            "virtual": false,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 1480,
+              "nodeType": "Block",
+              "src": "941:237:9",
+              "statements": [
+                {
+                  "assignments": [
+                    1448
+                  ],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 1448,
+                      "mutability": "mutable",
+                      "name": "payout",
+                      "nodeType": "VariableDeclaration",
+                      "scope": 1480,
+                      "src": "951:28:9",
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr",
+                        "typeString": "struct LibPart.Part[]"
+                      },
+                      "typeName": {
+                        "baseType": {
+                          "id": 1446,
+                          "name": "LibPart.Part",
+                          "nodeType": "UserDefinedTypeName",
+                          "referencedDeclaration": 4722,
+                          "src": "951:12:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Part_$4722_storage_ptr",
+                            "typeString": "struct LibPart.Part"
+                          }
+                        },
+                        "id": 1447,
+                        "nodeType": "ArrayTypeName",
+                        "src": "951:14:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_array$_t_struct$_Part_$4722_storage_$dyn_storage_ptr",
+                          "typeString": "struct LibPart.Part[]"
+                        }
+                      },
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 1454,
+                  "initialValue": {
+                    "arguments": [
+                      {
+                        "hexValue": "31",
+                        "id": 1452,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1001:1:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        },
+                        "value": "1"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_rational_1_by_1",
+                          "typeString": "int_const 1"
+                        }
+                      ],
+                      "id": 1451,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": true,
+                      "lValueRequested": false,
+                      "nodeType": "NewExpression",
+                      "src": "982:18:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_objectcreation_pure$_t_uint256_$returns$_t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr_$",
+                        "typeString": "function (uint256) pure returns (struct LibPart.Part memory[] memory)"
+                      },
+                      "typeName": {
+                        "baseType": {
+                          "id": 1449,
+                          "name": "LibPart.Part",
+                          "nodeType": "UserDefinedTypeName",
+                          "referencedDeclaration": 4722,
+                          "src": "986:12:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Part_$4722_storage_ptr",
+                            "typeString": "struct LibPart.Part"
+                          }
+                        },
+                        "id": 1450,
+                        "nodeType": "ArrayTypeName",
+                        "src": "986:14:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_array$_t_struct$_Part_$4722_storage_$dyn_storage_ptr",
+                          "typeString": "struct LibPart.Part[]"
+                        }
+                      }
+                    },
+                    "id": 1453,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": true,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "982:21:9",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr",
+                      "typeString": "struct LibPart.Part memory[] memory"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "951:52:9"
+                },
+                {
+                  "expression": {
+                    "id": 1463,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "expression": {
+                        "baseExpression": {
+                          "id": 1455,
+                          "name": "payout",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 1448,
+                          "src": "1013:6:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr",
+                            "typeString": "struct LibPart.Part memory[] memory"
+                          }
+                        },
+                        "id": 1457,
+                        "indexExpression": {
+                          "hexValue": "30",
+                          "id": 1456,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": true,
+                          "kind": "number",
+                          "lValueRequested": false,
+                          "nodeType": "Literal",
+                          "src": "1020:1:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_rational_0_by_1",
+                            "typeString": "int_const 0"
+                          },
+                          "value": "0"
+                        },
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "nodeType": "IndexAccess",
+                        "src": "1013:9:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Part_$4722_memory_ptr",
+                          "typeString": "struct LibPart.Part memory"
+                        }
+                      },
+                      "id": 1458,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "account",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 4719,
+                      "src": "1013:17:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address_payable",
+                        "typeString": "address payable"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "arguments": [
+                        {
+                          "id": 1461,
+                          "name": "orderAddress",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 1437,
+                          "src": "1041:12:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        ],
+                        "id": 1460,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "lValueRequested": false,
+                        "nodeType": "ElementaryTypeNameExpression",
+                        "src": "1033:8:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_type$_t_address_payable_$",
+                          "typeString": "type(address payable)"
+                        },
+                        "typeName": {
+                          "id": 1459,
+                          "name": "address",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "1033:8:9",
+                          "stateMutability": "payable",
+                          "typeDescriptions": {}
+                        }
+                      },
+                      "id": 1462,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "typeConversion",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "1033:21:9",
+                      "tryCall": false,
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address_payable",
+                        "typeString": "address payable"
+                      }
+                    },
+                    "src": "1013:41:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address_payable",
+                      "typeString": "address payable"
+                    }
+                  },
+                  "id": 1464,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1013:41:9"
+                },
+                {
+                  "expression": {
+                    "id": 1470,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "expression": {
+                        "baseExpression": {
+                          "id": 1465,
+                          "name": "payout",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 1448,
+                          "src": "1064:6:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr",
+                            "typeString": "struct LibPart.Part memory[] memory"
+                          }
+                        },
+                        "id": 1467,
+                        "indexExpression": {
+                          "hexValue": "30",
+                          "id": 1466,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": true,
+                          "kind": "number",
+                          "lValueRequested": false,
+                          "nodeType": "Literal",
+                          "src": "1071:1:9",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_rational_0_by_1",
+                            "typeString": "int_const 0"
+                          },
+                          "value": "0"
+                        },
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "nodeType": "IndexAccess",
+                        "src": "1064:9:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_Part_$4722_memory_ptr",
+                          "typeString": "struct LibPart.Part memory"
+                        }
+                      },
+                      "id": 1468,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "value",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 4721,
+                      "src": "1064:15:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint96",
+                        "typeString": "uint96"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "hexValue": "3130303030",
+                      "id": 1469,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": true,
+                      "kind": "number",
+                      "lValueRequested": false,
+                      "nodeType": "Literal",
+                      "src": "1082:5:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_rational_10000_by_1",
+                        "typeString": "int_const 10000"
+                      },
+                      "value": "10000"
+                    },
+                    "src": "1064:23:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint96",
+                      "typeString": "uint96"
+                    }
+                  },
+                  "id": 1471,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1064:23:9"
+                },
+                {
+                  "expression": {
+                    "id": 1476,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "expression": {
+                        "id": 1472,
+                        "name": "dataOrderOnePayoutIn",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 1439,
+                        "src": "1097:20:9",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                          "typeString": "struct LibOrderDataV1.DataV1 memory"
+                        }
+                      },
+                      "id": 1474,
+                      "isConstant": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "memberName": "payouts",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 1497,
+                      "src": "1097:28:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr",
+                        "typeString": "struct LibPart.Part memory[] memory"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "id": 1475,
+                      "name": "payout",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 1448,
+                      "src": "1128:6:9",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr",
+                        "typeString": "struct LibPart.Part memory[] memory"
+                      }
+                    },
+                    "src": "1097:37:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_struct$_Part_$4722_memory_ptr_$dyn_memory_ptr",
+                      "typeString": "struct LibPart.Part memory[] memory"
+                    }
+                  },
+                  "id": 1477,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1097:37:9"
+                },
+                {
+                  "expression": {
+                    "id": 1478,
+                    "name": "dataOrderOnePayoutIn",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 1439,
+                    "src": "1151:20:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                      "typeString": "struct LibOrderDataV1.DataV1 memory"
+                    }
+                  },
+                  "functionReturnParameters": 1443,
+                  "id": 1479,
+                  "nodeType": "Return",
+                  "src": "1144:27:9"
+                }
+              ]
+            },
+            "id": 1481,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "payoutSet",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 1440,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1437,
+                  "mutability": "mutable",
+                  "name": "orderAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1481,
+                  "src": "801:20:9",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 1436,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "801:7:9",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 1439,
+                  "mutability": "mutable",
+                  "name": "dataOrderOnePayoutIn",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1481,
+                  "src": "831:49:9",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                    "typeString": "struct LibOrderDataV1.DataV1"
+                  },
+                  "typeName": {
+                    "id": 1438,
+                    "name": "LibOrderDataV1.DataV1",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 1501,
+                    "src": "831:21:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_DataV1_$1501_storage_ptr",
+                      "typeString": "struct LibOrderDataV1.DataV1"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "791:95:9"
+            },
+            "returnParameters": {
+              "id": 1443,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 1442,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 1481,
+                  "src": "910:28:9",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                    "typeString": "struct LibOrderDataV1.DataV1"
+                  },
+                  "typeName": {
+                    "id": 1441,
+                    "name": "LibOrderDataV1.DataV1",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 1501,
+                    "src": "910:21:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_DataV1_$1501_storage_ptr",
+                      "typeString": "struct LibOrderDataV1.DataV1"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "909:31:9"
+            },
+            "scope": 1482,
+            "src": "773:405:9",
+            "stateMutability": "pure",
+            "virtual": false,
+            "visibility": "internal"
+          }
+        ],
+        "scope": 1483,
+        "src": "194:986:9"
+      }
+    ],
+    "src": "33:1148:9"
+  },
+  "legacyAST": {
+    "attributes": {
+      "absolutePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderData.sol",
+      "exportedSymbols": {
+        "LibAsset": [
+          4695
+        ],
+        "LibMath": [
+          2993
+        ],
+        "LibOrder": [
+          1372
+        ],
+        "LibOrderData": [
+          1482
+        ],
+        "LibOrderDataV1": [
+          1519
+        ],
+        "LibPart": [
+          4742
+        ],
+        "SafeMathUpgradeable": [
+          3865
+        ]
+      },
+      "license": "MIT"
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "0.7",
+            ".6"
+          ]
+        },
+        "id": 1374,
+        "name": "PragmaDirective",
+        "src": "33:22:9"
+      },
+      {
+        "attributes": {
+          "SourceUnit": 1373,
+          "absolutePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrder.sol",
+          "file": "./LibOrder.sol",
+          "scope": 1483,
+          "symbolAliases": [
+            null
+          ],
+          "unitAlias": ""
+        },
+        "id": 1375,
+        "name": "ImportDirective",
+        "src": "57:24:9"
+      },
+      {
+        "attributes": {
+          "SourceUnit": 1483,
+          "absolutePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderData.sol",
+          "file": "./LibOrderData.sol",
+          "scope": 1483,
+          "symbolAliases": [
+            null
+          ],
+          "unitAlias": ""
+        },
+        "id": 1376,
+        "name": "ImportDirective",
+        "src": "82:28:9"
+      },
+      {
+        "attributes": {
+          "SourceUnit": 1520,
+          "absolutePath": "/home/quadro/Projects/rarible/protocol-contracts/exchange-v2/contracts/LibOrderDataV1.sol",
+          "file": "./LibOrderDataV1.sol",
+          "scope": 1483,
+          "symbolAliases": [
+            null
+          ],
+          "unitAlias": ""
+        },
+        "id": 1377,
+        "name": "ImportDirective",
+        "src": "111:30:9"
+      },
+      {
+        "attributes": {
+          "SourceUnit": 4743,
+          "absolutePath": "@rarible/royalties/contracts/LibPart.sol",
+          "file": "@rarible/royalties/contracts/LibPart.sol",
+          "scope": 1483,
+          "symbolAliases": [
+            null
+          ],
+          "unitAlias": ""
+        },
+        "id": 1378,
+        "name": "ImportDirective",
+        "src": "142:50:9"
+      },
+      {
+        "attributes": {
+          "abstract": false,
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "library",
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            1482
+          ],
+          "name": "LibOrderData",
+          "scope": 1483
+        },
+        "children": [
+          {
+            "attributes": {
+              "implemented": true,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "parse",
+              "scope": 1482,
+              "stateMutability": "pure",
+              "virtual": false,
+              "visibility": "internal"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "order",
+                      "scope": 1435,
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "type": "struct LibOrder.Order",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "LibOrder.Order",
+                          "referencedDeclaration": 1232,
+                          "type": "struct LibOrder.Order"
+                        },
+                        "id": 1379,
+                        "name": "UserDefinedTypeName",
+                        "src": "237:14:9"
+                      }
+                    ],
+                    "id": 1380,
+                    "name": "VariableDeclaration",
+                    "src": "237:27:9"
+                  }
+                ],
+                "id": 1381,
+                "name": "ParameterList",
+                "src": "236:29:9"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "dataOrder",
+                      "scope": 1435,
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "type": "struct LibOrderDataV1.DataV1",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "LibOrderDataV1.DataV1",
+                          "referencedDeclaration": 1501,
+                          "type": "struct LibOrderDataV1.DataV1"
+                        },
+                        "id": 1382,
+                        "name": "UserDefinedTypeName",
+                        "src": "289:21:9"
+                      }
+                    ],
+                    "id": 1383,
+                    "name": "VariableDeclaration",
+                    "src": "289:38:9"
+                  }
+                ],
+                "id": 1384,
+                "name": "ParameterList",
+                "src": "288:40:9"
+              },
+              {
+                "children": [
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "commonType": {
+                            "typeIdentifier": "t_bytes4",
+                            "typeString": "bytes4"
+                          },
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "==",
+                          "type": "bool"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "member_name": "dataType",
+                              "referencedDeclaration": 1229,
+                              "type": "bytes4"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 1380,
+                                  "type": "struct LibOrder.Order memory",
+                                  "value": "order"
+                                },
+                                "id": 1385,
+                                "name": "Identifier",
+                                "src": "343:5:9"
+                              }
+                            ],
+                            "id": 1386,
+                            "name": "MemberAccess",
+                            "src": "343:14:9"
+                          },
+                          {
+                            "attributes": {
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "member_name": "V1",
+                              "referencedDeclaration": 1494,
+                              "type": "bytes4"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 1519,
+                                  "type": "type(library LibOrderDataV1)",
+                                  "value": "LibOrderDataV1"
+                                },
+                                "id": 1387,
+                                "name": "Identifier",
+                                "src": "361:14:9"
+                              }
+                            ],
+                            "id": 1388,
+                            "name": "MemberAccess",
+                            "src": "361:17:9"
+                          }
+                        ],
+                        "id": 1389,
+                        "name": "BinaryOperation",
+                        "src": "343:35:9"
+                      },
+                      {
+                        "children": [
+                          {
+                            "children": [
+                              {
+                                "attributes": {
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "operator": "=",
+                                  "type": "struct LibOrderDataV1.DataV1 memory"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 1383,
+                                      "type": "struct LibOrderDataV1.DataV1 memory",
+                                      "value": "dataOrder"
+                                    },
+                                    "id": 1390,
+                                    "name": "Identifier",
+                                    "src": "394:9:9"
+                                  },
+                                  {
+                                    "attributes": {
+                                      "isConstant": false,
+                                      "isLValue": false,
+                                      "isPure": false,
+                                      "isStructConstructorCall": false,
+                                      "lValueRequested": false,
+                                      "names": [
+                                        null
+                                      ],
+                                      "tryCall": false,
+                                      "type": "struct LibOrderDataV1.DataV1 memory",
+                                      "type_conversion": false
+                                    },
+                                    "children": [
+                                      {
+                                        "attributes": {
+                                          "argumentTypes": [
+                                            {
+                                              "typeIdentifier": "t_bytes_memory_ptr",
+                                              "typeString": "bytes memory"
+                                            }
+                                          ],
+                                          "isConstant": false,
+                                          "isLValue": false,
+                                          "isPure": false,
+                                          "lValueRequested": false,
+                                          "member_name": "decodeOrderDataV1",
+                                          "referencedDeclaration": 1518,
+                                          "type": "function (bytes memory) pure returns (struct LibOrderDataV1.DataV1 memory)"
+                                        },
+                                        "children": [
+                                          {
+                                            "attributes": {
+                                              "overloadedDeclarations": [
+                                                null
+                                              ],
+                                              "referencedDeclaration": 1519,
+                                              "type": "type(library LibOrderDataV1)",
+                                              "value": "LibOrderDataV1"
+                                            },
+                                            "id": 1391,
+                                            "name": "Identifier",
+                                            "src": "406:14:9"
+                                          }
+                                        ],
+                                        "id": 1392,
+                                        "name": "MemberAccess",
+                                        "src": "406:32:9"
+                                      },
+                                      {
+                                        "attributes": {
+                                          "isConstant": false,
+                                          "isLValue": true,
+                                          "isPure": false,
+                                          "lValueRequested": false,
+                                          "member_name": "data",
+                                          "referencedDeclaration": 1231,
+                                          "type": "bytes memory"
+                                        },
+                                        "children": [
+                                          {
+                                            "attributes": {
+                                              "overloadedDeclarations": [
+                                                null
+                                              ],
+                                              "referencedDeclaration": 1380,
+                                              "type": "struct LibOrder.Order memory",
+                                              "value": "order"
+                                            },
+                                            "id": 1393,
+                                            "name": "Identifier",
+                                            "src": "439:5:9"
+                                          }
+                                        ],
+                                        "id": 1394,
+                                        "name": "MemberAccess",
+                                        "src": "439:10:9"
+                                      }
+                                    ],
+                                    "id": 1395,
+                                    "name": "FunctionCall",
+                                    "src": "406:44:9"
+                                  }
+                                ],
+                                "id": 1396,
+                                "name": "Assignment",
+                                "src": "394:56:9"
+                              }
+                            ],
+                            "id": 1397,
+                            "name": "ExpressionStatement",
+                            "src": "394:56:9"
+                          },
+                          {
+                            "attributes": {},
+                            "children": [
+                              {
+                                "attributes": {
+                                  "commonType": {
+                                    "typeIdentifier": "t_uint256",
+                                    "typeString": "uint256"
+                                  },
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "operator": "==",
+                                  "type": "bool"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "isConstant": false,
+                                      "isLValue": false,
+                                      "isPure": false,
+                                      "lValueRequested": false,
+                                      "member_name": "length",
+                                      "type": "uint256"
+                                    },
+                                    "children": [
+                                      {
+                                        "attributes": {
+                                          "isConstant": false,
+                                          "isLValue": true,
+                                          "isPure": false,
+                                          "lValueRequested": false,
+                                          "member_name": "payouts",
+                                          "referencedDeclaration": 1497,
+                                          "type": "struct LibPart.Part memory[] memory"
+                                        },
+                                        "children": [
+                                          {
+                                            "attributes": {
+                                              "overloadedDeclarations": [
+                                                null
+                                              ],
+                                              "referencedDeclaration": 1383,
+                                              "type": "struct LibOrderDataV1.DataV1 memory",
+                                              "value": "dataOrder"
+                                            },
+                                            "id": 1398,
+                                            "name": "Identifier",
+                                            "src": "468:9:9"
+                                          }
+                                        ],
+                                        "id": 1399,
+                                        "name": "MemberAccess",
+                                        "src": "468:17:9"
+                                      }
+                                    ],
+                                    "id": 1400,
+                                    "name": "MemberAccess",
+                                    "src": "468:24:9"
+                                  },
+                                  {
+                                    "attributes": {
+                                      "hexvalue": "30",
+                                      "isConstant": false,
+                                      "isLValue": false,
+                                      "isPure": true,
+                                      "lValueRequested": false,
+                                      "token": "number",
+                                      "type": "int_const 0",
+                                      "value": "0"
+                                    },
+                                    "id": 1401,
+                                    "name": "Literal",
+                                    "src": "496:1:9"
+                                  }
+                                ],
+                                "id": 1402,
+                                "name": "BinaryOperation",
+                                "src": "468:29:9"
+                              },
+                              {
+                                "children": [
+                                  {
+                                    "children": [
+                                      {
+                                        "attributes": {
+                                          "isConstant": false,
+                                          "isLValue": false,
+                                          "isPure": false,
+                                          "lValueRequested": false,
+                                          "operator": "=",
+                                          "type": "struct LibOrderDataV1.DataV1 memory"
+                                        },
+                                        "children": [
+                                          {
+                                            "attributes": {
+                                              "overloadedDeclarations": [
+                                                null
+                                              ],
+                                              "referencedDeclaration": 1383,
+                                              "type": "struct LibOrderDataV1.DataV1 memory",
+                                              "value": "dataOrder"
+                                            },
+                                            "id": 1403,
+                                            "name": "Identifier",
+                                            "src": "517:9:9"
+                                          },
+                                          {
+                                            "attributes": {
+                                              "isConstant": false,
+                                              "isLValue": false,
+                                              "isPure": false,
+                                              "isStructConstructorCall": false,
+                                              "lValueRequested": false,
+                                              "names": [
+                                                null
+                                              ],
+                                              "tryCall": false,
+                                              "type": "struct LibOrderDataV1.DataV1 memory",
+                                              "type_conversion": false
+                                            },
+                                            "children": [
+                                              {
+                                                "attributes": {
+                                                  "argumentTypes": [
+                                                    {
+                                                      "typeIdentifier": "t_address",
+                                                      "typeString": "address"
+                                                    },
+                                                    {
+                                                      "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                                      "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                                    }
+                                                  ],
+                                                  "overloadedDeclarations": [
+                                                    null
+                                                  ],
+                                                  "referencedDeclaration": 1481,
+                                                  "type": "function (address,struct LibOrderDataV1.DataV1 memory) pure returns (struct LibOrderDataV1.DataV1 memory)",
+                                                  "value": "payoutSet"
+                                                },
+                                                "id": 1404,
+                                                "name": "Identifier",
+                                                "src": "529:9:9"
+                                              },
+                                              {
+                                                "attributes": {
+                                                  "isConstant": false,
+                                                  "isLValue": true,
+                                                  "isPure": false,
+                                                  "lValueRequested": false,
+                                                  "member_name": "maker",
+                                                  "referencedDeclaration": 1215,
+                                                  "type": "address"
+                                                },
+                                                "children": [
+                                                  {
+                                                    "attributes": {
+                                                      "overloadedDeclarations": [
+                                                        null
+                                                      ],
+                                                      "referencedDeclaration": 1380,
+                                                      "type": "struct LibOrder.Order memory",
+                                                      "value": "order"
+                                                    },
+                                                    "id": 1405,
+                                                    "name": "Identifier",
+                                                    "src": "539:5:9"
+                                                  }
+                                                ],
+                                                "id": 1406,
+                                                "name": "MemberAccess",
+                                                "src": "539:11:9"
+                                              },
+                                              {
+                                                "attributes": {
+                                                  "overloadedDeclarations": [
+                                                    null
+                                                  ],
+                                                  "referencedDeclaration": 1383,
+                                                  "type": "struct LibOrderDataV1.DataV1 memory",
+                                                  "value": "dataOrder"
+                                                },
+                                                "id": 1407,
+                                                "name": "Identifier",
+                                                "src": "552:9:9"
+                                              }
+                                            ],
+                                            "id": 1408,
+                                            "name": "FunctionCall",
+                                            "src": "529:33:9"
+                                          }
+                                        ],
+                                        "id": 1409,
+                                        "name": "Assignment",
+                                        "src": "517:45:9"
+                                      }
+                                    ],
+                                    "id": 1410,
+                                    "name": "ExpressionStatement",
+                                    "src": "517:45:9"
+                                  }
+                                ],
+                                "id": 1411,
+                                "name": "Block",
+                                "src": "499:78:9"
+                              }
+                            ],
+                            "id": 1412,
+                            "name": "IfStatement",
+                            "src": "464:113:9"
+                          }
+                        ],
+                        "id": 1413,
+                        "name": "Block",
+                        "src": "380:207:9"
+                      },
+                      {
+                        "children": [
+                          {
+                            "attributes": {
+                              "commonType": {
+                                "typeIdentifier": "t_bytes4",
+                                "typeString": "bytes4"
+                              },
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "operator": "==",
+                              "type": "bool"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "isConstant": false,
+                                  "isLValue": true,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "member_name": "dataType",
+                                  "referencedDeclaration": 1229,
+                                  "type": "bytes4"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 1380,
+                                      "type": "struct LibOrder.Order memory",
+                                      "value": "order"
+                                    },
+                                    "id": 1414,
+                                    "name": "Identifier",
+                                    "src": "597:5:9"
+                                  }
+                                ],
+                                "id": 1415,
+                                "name": "MemberAccess",
+                                "src": "597:14:9"
+                              },
+                              {
+                                "attributes": {
+                                  "hexvalue": "30786666666666666666",
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": true,
+                                  "lValueRequested": false,
+                                  "token": "number",
+                                  "type": "int_const 4294967295",
+                                  "value": "0xffffffff"
+                                },
+                                "id": 1416,
+                                "name": "Literal",
+                                "src": "615:10:9"
+                              }
+                            ],
+                            "id": 1417,
+                            "name": "BinaryOperation",
+                            "src": "597:28:9"
+                          },
+                          {
+                            "children": [
+                              {
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "isConstant": false,
+                                      "isLValue": false,
+                                      "isPure": false,
+                                      "lValueRequested": false,
+                                      "operator": "=",
+                                      "type": "struct LibOrderDataV1.DataV1 memory"
+                                    },
+                                    "children": [
+                                      {
+                                        "attributes": {
+                                          "overloadedDeclarations": [
+                                            null
+                                          ],
+                                          "referencedDeclaration": 1383,
+                                          "type": "struct LibOrderDataV1.DataV1 memory",
+                                          "value": "dataOrder"
+                                        },
+                                        "id": 1418,
+                                        "name": "Identifier",
+                                        "src": "641:9:9"
+                                      },
+                                      {
+                                        "attributes": {
+                                          "isConstant": false,
+                                          "isLValue": false,
+                                          "isPure": false,
+                                          "isStructConstructorCall": false,
+                                          "lValueRequested": false,
+                                          "names": [
+                                            null
+                                          ],
+                                          "tryCall": false,
+                                          "type": "struct LibOrderDataV1.DataV1 memory",
+                                          "type_conversion": false
+                                        },
+                                        "children": [
+                                          {
+                                            "attributes": {
+                                              "argumentTypes": [
+                                                {
+                                                  "typeIdentifier": "t_address",
+                                                  "typeString": "address"
+                                                },
+                                                {
+                                                  "typeIdentifier": "t_struct$_DataV1_$1501_memory_ptr",
+                                                  "typeString": "struct LibOrderDataV1.DataV1 memory"
+                                                }
+                                              ],
+                                              "overloadedDeclarations": [
+                                                null
+                                              ],
+                                              "referencedDeclaration": 1481,
+                                              "type": "function (address,struct LibOrderDataV1.DataV1 memory) pure returns (struct LibOrderDataV1.DataV1 memory)",
+                                              "value": "payoutSet"
+                                            },
+                                            "id": 1419,
+                                            "name": "Identifier",
+                                            "src": "653:9:9"
+                                          },
+                                          {
+                                            "attributes": {
+                                              "isConstant": false,
+                                              "isLValue": true,
+                                              "isPure": false,
+                                              "lValueRequested": false,
+                                              "member_name": "maker",
+                                              "referencedDeclaration": 1215,
+                                              "type": "address"
+                                            },
+                                            "children": [
+                                              {
+                                                "attributes": {
+                                                  "overloadedDeclarations": [
+                                                    null
+                                                  ],
+                                                  "referencedDeclaration": 1380,
+                                                  "type": "struct LibOrder.Order memory",
+                                                  "value": "order"
+                                                },
+                                                "id": 1420,
+                                                "name": "Identifier",
+                                                "src": "663:5:9"
+                                              }
+                                            ],
+                                            "id": 1421,
+                                            "name": "MemberAccess",
+                                            "src": "663:11:9"
+                                          },
+                                          {
+                                            "attributes": {
+                                              "overloadedDeclarations": [
+                                                null
+                                              ],
+                                              "referencedDeclaration": 1383,
+                                              "type": "struct LibOrderDataV1.DataV1 memory",
+                                              "value": "dataOrder"
+                                            },
+                                            "id": 1422,
+                                            "name": "Identifier",
+                                            "src": "676:9:9"
+                                          }
+                                        ],
+                                        "id": 1423,
+                                        "name": "FunctionCall",
+                                        "src": "653:33:9"
+                                      }
+                                    ],
+                                    "id": 1424,
+                                    "name": "Assignment",
+                                    "src": "641:45:9"
+                                  }
+                                ],
+                                "id": 1425,
+                                "name": "ExpressionStatement",
+                                "src": "641:45:9"
+                              }
+                            ],
+                            "id": 1426,
+                            "name": "Block",
+                            "src": "627:70:9"
+                          },
+                          {
+                            "children": [
+                              {
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "isConstant": false,
+                                      "isLValue": false,
+                                      "isPure": false,
+                                      "isStructConstructorCall": false,
+                                      "lValueRequested": false,
+                                      "names": [
+                                        null
+                                      ],
+                                      "tryCall": false,
+                                      "type": "tuple()",
+                                      "type_conversion": false
+                                    },
+                                    "children": [
+                                      {
+                                        "attributes": {
+                                          "argumentTypes": [
+                                            {
+                                              "typeIdentifier": "t_stringliteral_a8d4179c57d21bb0adffe74c6e7a4d43bf1559a57e0b833a295fb2cf352d9f77",
+                                              "typeString": "literal_string \"Unknown Order data type\""
+                                            }
+                                          ],
+                                          "overloadedDeclarations": [
+                                            4294967277,
+                                            4294967277
+                                          ],
+                                          "referencedDeclaration": 4294967277,
+                                          "type": "function (string memory) pure",
+                                          "value": "revert"
+                                        },
+                                        "id": 1427,
+                                        "name": "Identifier",
+                                        "src": "717:6:9"
+                                      },
+                                      {
+                                        "attributes": {
+                                          "hexvalue": "556e6b6e6f776e204f7264657220646174612074797065",
+                                          "isConstant": false,
+                                          "isLValue": false,
+                                          "isPure": true,
+                                          "lValueRequested": false,
+                                          "token": "string",
+                                          "type": "literal_string \"Unknown Order data type\"",
+                                          "value": "Unknown Order data type"
+                                        },
+                                        "id": 1428,
+                                        "name": "Literal",
+                                        "src": "724:25:9"
+                                      }
+                                    ],
+                                    "id": 1429,
+                                    "name": "FunctionCall",
+                                    "src": "717:33:9"
+                                  }
+                                ],
+                                "id": 1430,
+                                "name": "ExpressionStatement",
+                                "src": "717:33:9"
+                              }
+                            ],
+                            "id": 1431,
+                            "name": "Block",
+                            "src": "703:58:9"
+                          }
+                        ],
+                        "id": 1432,
+                        "name": "IfStatement",
+                        "src": "593:168:9"
+                      }
+                    ],
+                    "id": 1433,
+                    "name": "IfStatement",
+                    "src": "339:422:9"
+                  }
+                ],
+                "id": 1434,
+                "name": "Block",
+                "src": "329:438:9"
+              }
+            ],
+            "id": 1435,
+            "name": "FunctionDefinition",
+            "src": "222:545:9"
+          },
+          {
+            "attributes": {
+              "implemented": true,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "payoutSet",
+              "scope": 1482,
+              "stateMutability": "pure",
+              "virtual": false,
+              "visibility": "internal"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "orderAddress",
+                      "scope": 1481,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 1436,
+                        "name": "ElementaryTypeName",
+                        "src": "801:7:9"
+                      }
+                    ],
+                    "id": 1437,
+                    "name": "VariableDeclaration",
+                    "src": "801:20:9"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "dataOrderOnePayoutIn",
+                      "scope": 1481,
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "type": "struct LibOrderDataV1.DataV1",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "LibOrderDataV1.DataV1",
+                          "referencedDeclaration": 1501,
+                          "type": "struct LibOrderDataV1.DataV1"
+                        },
+                        "id": 1438,
+                        "name": "UserDefinedTypeName",
+                        "src": "831:21:9"
+                      }
+                    ],
+                    "id": 1439,
+                    "name": "VariableDeclaration",
+                    "src": "831:49:9"
+                  }
+                ],
+                "id": 1440,
+                "name": "ParameterList",
+                "src": "791:95:9"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "",
+                      "scope": 1481,
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "type": "struct LibOrderDataV1.DataV1",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "LibOrderDataV1.DataV1",
+                          "referencedDeclaration": 1501,
+                          "type": "struct LibOrderDataV1.DataV1"
+                        },
+                        "id": 1441,
+                        "name": "UserDefinedTypeName",
+                        "src": "910:21:9"
+                      }
+                    ],
+                    "id": 1442,
+                    "name": "VariableDeclaration",
+                    "src": "910:28:9"
+                  }
+                ],
+                "id": 1443,
+                "name": "ParameterList",
+                "src": "909:31:9"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "assignments": [
+                        1448
+                      ]
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "constant": false,
+                          "mutability": "mutable",
+                          "name": "payout",
+                          "scope": 1480,
+                          "stateVariable": false,
+                          "storageLocation": "memory",
+                          "type": "struct LibPart.Part[]",
+                          "visibility": "internal"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "type": "struct LibPart.Part[]"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "name": "LibPart.Part",
+                                  "referencedDeclaration": 4722,
+                                  "type": "struct LibPart.Part"
+                                },
+                                "id": 1446,
+                                "name": "UserDefinedTypeName",
+                                "src": "951:12:9"
+                              }
+                            ],
+                            "id": 1447,
+                            "name": "ArrayTypeName",
+                            "src": "951:14:9"
+                          }
+                        ],
+                        "id": 1448,
+                        "name": "VariableDeclaration",
+                        "src": "951:28:9"
+                      },
+                      {
+                        "attributes": {
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": true,
+                          "isStructConstructorCall": false,
+                          "lValueRequested": false,
+                          "names": [
+                            null
+                          ],
+                          "tryCall": false,
+                          "type": "struct LibPart.Part memory[] memory",
+                          "type_conversion": false
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_rational_1_by_1",
+                                  "typeString": "int_const 1"
+                                }
+                              ],
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": true,
+                              "lValueRequested": false,
+                              "type": "function (uint256) pure returns (struct LibPart.Part memory[] memory)"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "type": "struct LibPart.Part[]"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "name": "LibPart.Part",
+                                      "referencedDeclaration": 4722,
+                                      "type": "struct LibPart.Part"
+                                    },
+                                    "id": 1449,
+                                    "name": "UserDefinedTypeName",
+                                    "src": "986:12:9"
+                                  }
+                                ],
+                                "id": 1450,
+                                "name": "ArrayTypeName",
+                                "src": "986:14:9"
+                              }
+                            ],
+                            "id": 1451,
+                            "name": "NewExpression",
+                            "src": "982:18:9"
+                          },
+                          {
+                            "attributes": {
+                              "hexvalue": "31",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": true,
+                              "lValueRequested": false,
+                              "token": "number",
+                              "type": "int_const 1",
+                              "value": "1"
+                            },
+                            "id": 1452,
+                            "name": "Literal",
+                            "src": "1001:1:9"
+                          }
+                        ],
+                        "id": 1453,
+                        "name": "FunctionCall",
+                        "src": "982:21:9"
+                      }
+                    ],
+                    "id": 1454,
+                    "name": "VariableDeclarationStatement",
+                    "src": "951:52:9"
+                  },
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "=",
+                          "type": "address payable"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": true,
+                              "member_name": "account",
+                              "referencedDeclaration": 4719,
+                              "type": "address payable"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "isConstant": false,
+                                  "isLValue": true,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "type": "struct LibPart.Part memory"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 1448,
+                                      "type": "struct LibPart.Part memory[] memory",
+                                      "value": "payout"
+                                    },
+                                    "id": 1455,
+                                    "name": "Identifier",
+                                    "src": "1013:6:9"
+                                  },
+                                  {
+                                    "attributes": {
+                                      "hexvalue": "30",
+                                      "isConstant": false,
+                                      "isLValue": false,
+                                      "isPure": true,
+                                      "lValueRequested": false,
+                                      "token": "number",
+                                      "type": "int_const 0",
+                                      "value": "0"
+                                    },
+                                    "id": 1456,
+                                    "name": "Literal",
+                                    "src": "1020:1:9"
+                                  }
+                                ],
+                                "id": 1457,
+                                "name": "IndexAccess",
+                                "src": "1013:9:9"
+                              }
+                            ],
+                            "id": 1458,
+                            "name": "MemberAccess",
+                            "src": "1013:17:9"
+                          },
+                          {
+                            "attributes": {
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "isStructConstructorCall": false,
+                              "lValueRequested": false,
+                              "names": [
+                                null
+                              ],
+                              "tryCall": false,
+                              "type": "address payable",
+                              "type_conversion": true
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": [
+                                    {
+                                      "typeIdentifier": "t_address",
+                                      "typeString": "address"
+                                    }
+                                  ],
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": true,
+                                  "lValueRequested": false,
+                                  "type": "type(address payable)"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "name": "address",
+                                      "stateMutability": "payable"
+                                    },
+                                    "id": 1459,
+                                    "name": "ElementaryTypeName",
+                                    "src": "1033:8:9"
+                                  }
+                                ],
+                                "id": 1460,
+                                "name": "ElementaryTypeNameExpression",
+                                "src": "1033:8:9"
+                              },
+                              {
+                                "attributes": {
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 1437,
+                                  "type": "address",
+                                  "value": "orderAddress"
+                                },
+                                "id": 1461,
+                                "name": "Identifier",
+                                "src": "1041:12:9"
+                              }
+                            ],
+                            "id": 1462,
+                            "name": "FunctionCall",
+                            "src": "1033:21:9"
+                          }
+                        ],
+                        "id": 1463,
+                        "name": "Assignment",
+                        "src": "1013:41:9"
+                      }
+                    ],
+                    "id": 1464,
+                    "name": "ExpressionStatement",
+                    "src": "1013:41:9"
+                  },
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "=",
+                          "type": "uint96"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": true,
+                              "member_name": "value",
+                              "referencedDeclaration": 4721,
+                              "type": "uint96"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "isConstant": false,
+                                  "isLValue": true,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "type": "struct LibPart.Part memory"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 1448,
+                                      "type": "struct LibPart.Part memory[] memory",
+                                      "value": "payout"
+                                    },
+                                    "id": 1465,
+                                    "name": "Identifier",
+                                    "src": "1064:6:9"
+                                  },
+                                  {
+                                    "attributes": {
+                                      "hexvalue": "30",
+                                      "isConstant": false,
+                                      "isLValue": false,
+                                      "isPure": true,
+                                      "lValueRequested": false,
+                                      "token": "number",
+                                      "type": "int_const 0",
+                                      "value": "0"
+                                    },
+                                    "id": 1466,
+                                    "name": "Literal",
+                                    "src": "1071:1:9"
+                                  }
+                                ],
+                                "id": 1467,
+                                "name": "IndexAccess",
+                                "src": "1064:9:9"
+                              }
+                            ],
+                            "id": 1468,
+                            "name": "MemberAccess",
+                            "src": "1064:15:9"
+                          },
+                          {
+                            "attributes": {
+                              "hexvalue": "3130303030",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": true,
+                              "lValueRequested": false,
+                              "token": "number",
+                              "type": "int_const 10000",
+                              "value": "10000"
+                            },
+                            "id": 1469,
+                            "name": "Literal",
+                            "src": "1082:5:9"
+                          }
+                        ],
+                        "id": 1470,
+                        "name": "Assignment",
+                        "src": "1064:23:9"
+                      }
+                    ],
+                    "id": 1471,
+                    "name": "ExpressionStatement",
+                    "src": "1064:23:9"
+                  },
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "operator": "=",
+                          "type": "struct LibPart.Part memory[] memory"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "isConstant": false,
+                              "isLValue": true,
+                              "isPure": false,
+                              "lValueRequested": true,
+                              "member_name": "payouts",
+                              "referencedDeclaration": 1497,
+                              "type": "struct LibPart.Part memory[] memory"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "overloadedDeclarations": [
+                                    null
+                                  ],
+                                  "referencedDeclaration": 1439,
+                                  "type": "struct LibOrderDataV1.DataV1 memory",
+                                  "value": "dataOrderOnePayoutIn"
+                                },
+                                "id": 1472,
+                                "name": "Identifier",
+                                "src": "1097:20:9"
+                              }
+                            ],
+                            "id": 1474,
+                            "name": "MemberAccess",
+                            "src": "1097:28:9"
+                          },
+                          {
+                            "attributes": {
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 1448,
+                              "type": "struct LibPart.Part memory[] memory",
+                              "value": "payout"
+                            },
+                            "id": 1475,
+                            "name": "Identifier",
+                            "src": "1128:6:9"
+                          }
+                        ],
+                        "id": 1476,
+                        "name": "Assignment",
+                        "src": "1097:37:9"
+                      }
+                    ],
+                    "id": 1477,
+                    "name": "ExpressionStatement",
+                    "src": "1097:37:9"
+                  },
+                  {
+                    "attributes": {
+                      "functionReturnParameters": 1443
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "overloadedDeclarations": [
+                            null
+                          ],
+                          "referencedDeclaration": 1439,
+                          "type": "struct LibOrderDataV1.DataV1 memory",
+                          "value": "dataOrderOnePayoutIn"
+                        },
+                        "id": 1478,
+                        "name": "Identifier",
+                        "src": "1151:20:9"
+                      }
+                    ],
+                    "id": 1479,
+                    "name": "Return",
+                    "src": "1144:27:9"
+                  }
+                ],
+                "id": 1480,
+                "name": "Block",
+                "src": "941:237:9"
+              }
+            ],
+            "id": 1481,
+            "name": "FunctionDefinition",
+            "src": "773:405:9"
+          }
+        ],
+        "id": 1482,
+        "name": "ContractDefinition",
+        "src": "194:986:9"
+      }
+    ],
+    "id": 1483,
+    "name": "SourceUnit",
+    "src": "33:1148:9"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.7.6+commit.7338295f.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.4.0",
+  "updatedAt": "2021-06-08T13:19:13.383Z",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  }
+}
